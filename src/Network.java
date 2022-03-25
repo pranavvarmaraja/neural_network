@@ -3,8 +3,9 @@
  * 2/25/2022
  * 
  * This class creates, trains, and runs a basic three activation layer perceptron. The network takes any number of inputs, 
- * passes them through 1 activation layer consisting of any number of nodes, and outputs a single value. Training
- * is performed via gradient descent to fit the network to training data.
+ * passes them through 1 activation layer consisting of any number of nodes, and outputs any number of values. The network
+ * is thus an A-B-C network, with any number of inputs, hidden nodes, and outputs.
+ * Training is performed via gradient descent to fit the network to training data.
  * 
  * Methods contained in file: setConfigValues(), echoConfigValues(), 
  * allocate(), populate(), randomInitialization(), getRandWeight(), activationFunction(x), 
@@ -42,6 +43,7 @@ public class Network
    double[] omegaj;
    double[] omegai;
    double[] psij;
+   double[] psii;
 
 /**
  * constructor for the Network, sets the config values, echoes then, allocates and populates all instance variable arrays
@@ -61,7 +63,7 @@ public class Network
    {
       mode = "TRAIN";
       numInputs = 2;
-      numHiddenNodes = 1;
+      numHiddenNodes = 2;
       maxErrorThreshold = 0.001;
       lambda = 0.3;
       maxIterations = 100000;
@@ -109,6 +111,7 @@ public class Network
          omegaj = new double[numHiddenNodes];
          omegai = new double[numOutputs];
          psij = new double[numHiddenNodes];
+         psii = new double[numOutputs];
       }
       
    } //public void allocate()
@@ -140,22 +143,23 @@ public class Network
  */
    public void randomInitialization() 
    {
+      int k;
       int i;
       int j;
 
-      for (i =0; i < weights0.length; i++) 
+      for (k = 0; k < weights0.length; k++) 
       {
-         for (j = 0; j < weights0[i].length; j++)
+         for (j = 0; j < weights0[k].length; j++)
          {
-            weights0[i][j] = getRandWeight();
+            weights0[k][j] = getRandWeight();
          }
       }
 
-      for (i =0; i < weights1.length; i++) 
+      for (j = 0; j < weights1.length; j++) 
       {
-         for (j = 0; j < weights1[i].length; j++)
+         for (i = 0; i < weights1[j].length; i++)
          {
-            weights1[i][j] = getRandWeight();
+            weights1[j][i] = getRandWeight();
          }
       }
 
@@ -178,7 +182,8 @@ public class Network
  */
    public double derivActivationFuncton(double x) 
    {
-      return activationFunction(x)*(1.0-activationFunction(x));
+      double derivative = activationFunction(x);
+      return derivative*(1.0-derivative);
    }
 
 /**
@@ -187,6 +192,7 @@ public class Network
  */
    public void runNetwork(double[] input)
    {
+      int k;
       int i;
       int j;
       double theta;
@@ -196,23 +202,23 @@ public class Network
       for (j = 0; j < h.length; j++) 
       {
          theta = 0.0;
-         for (i = 0; i < a.length; i++) 
+         for (k = 0; k < a.length; k++) 
          {
-            theta += a[i] * weights0[i][j];
+            theta += a[k] * weights0[k][j];
          }
          thetaj[j] = theta;
          h[j] = activationFunction(theta);
       }
 
-      for (j = 0; j< f.length; j++)
+      for (i = 0; i < f.length; i++)
       {
          theta = 0.0;
-         for (i = 0; i < h.length; i++)
+         for (j = 0; j < h.length; j++)
          {
-            theta += h[i]*weights1[i][j];
+            theta += h[j]*weights1[j][i];
          }
-         thetai[j] = theta;
-         f[j] = activationFunction(theta);
+         thetai[i] = theta;
+         f[i] = activationFunction(theta);
       }
 
    } //public void runNetwork()
@@ -267,6 +273,7 @@ public class Network
  */
    public void updateWeights() 
    {
+      int k;
       int j;
       int i;
       double lowerOmega = t[0] - f[0];
@@ -278,19 +285,19 @@ public class Network
          psij[j] = omegaj[j]*derivActivationFuncton(thetaj[j]);
       }
 
-      for (i =0; i<weights0.length; i++) 
+      for (k =0; k<weights0.length; k++) 
       {
-         for (j = 0; j<weights0[i].length; j++) 
+         for (j = 0; j<weights0[k].length; j++) 
          {
-            weights0[i][j] += -lambda*-a[i]*psij[j];
+            weights0[k][j] += -lambda*-a[k]*psij[j];
          }
       }
 
-      for (i = 0; i<weights1.length; i++) 
+      for (j = 0; j<weights1.length; j++) 
       {
-         for (j = 0; j<weights1[i].length; j++) 
+         for (i = 0; i<weights1[j].length; i++) 
          {
-            weights1[i][j] += -lambda*-h[i]*psi0;
+            weights1[j][i] += -lambda*-h[j]*psi0;
          }
       }
 
