@@ -1,15 +1,17 @@
+import java.util.Scanner;
+
 /**
  * Pranav Varmaraja
- * 2/25/2022
+ * 3/11/2022
  * 
  * This class creates, trains, and runs a basic three activation layer perceptron. The network takes any number of inputs, 
  * passes them through 1 activation layer consisting of any number of nodes, and outputs any number of values. The network
  * is thus an A-B-C network, with any number of inputs, hidden nodes, and outputs.
  * Training is performed via gradient descent to fit the network to training data.
  * 
- * Methods contained in file: setConfigValues(), echoConfigValues(), 
+ * Methods contained in file: inputMode(), setConfigValues(), echoConfigValues(), 
  * allocate(), populate(), randomInitialization(), getRandWeight(), activationFunction(x), 
- * derivActivationFunction(x), runNetwork(input), run(), train(), report(), updateWeight()
+ * derivActivationFunction(x), runNetwork(input), run(), train(), execute(), report(), updateWeight()
  * 
  */
 public class Network 
@@ -22,6 +24,9 @@ public class Network
    double[] f;
    double[] t;
 
+   enum mode {RUN, TRAIN};
+   mode runTrain;
+
    int numInputs;
    int numOutputs;
    int numHiddenNodes;
@@ -33,15 +38,13 @@ public class Network
    int numPossibleInputSets;
    int numIterations;
    double error;
-   String mode;
 
    double[][] possibleInputs;
-   double[] truthTable;
+   double[][] truthTable;
 
    double[] thetaj;
    double[] thetai;
    double[] omegaj;
-   double[] omegai;
    double[] psij;
    double[] psii;
 
@@ -50,6 +53,7 @@ public class Network
  */
    public Network() 
    {
+      inputMode();
       setConfigValues();
       echoConfigValues();
       allocate();
@@ -57,19 +61,62 @@ public class Network
    }
 
 /**
+ * asks for user input to determine the mode of the network (run or train)
+ */
+   public void inputMode()
+   {
+      Scanner scan = new Scanner(System.in);
+      int runMode = 0;
+      System.out.print("Would you like to RUN(1) or TRAIN(2) the network: ");
+      try 
+      {
+         runMode = scan.nextInt();
+      } 
+      catch (Exception e) 
+      {
+         e.printStackTrace();
+      }
+
+      while (runMode!=1 && runMode !=2)
+      {
+         System.out.println("Integer 1 or 2 not entered to determine network mode!");
+         System.out.print("Would you like to RUN(1) or TRAIN(2) the network: ");
+         try 
+         {
+            runMode = scan.nextInt();
+         } 
+         catch (Exception e) 
+         {
+            e.printStackTrace();
+         }
+      } //while (runMode!=1 && runMode !=2)
+      scan.close();
+
+      if (runMode==1)
+      {
+         System.out.println("Mode set to RUN!\n");
+         runTrain = mode.RUN;
+      }
+      else
+      {
+         System.out.println("Mode set to TRAIN!\n");
+         runTrain = mode.TRAIN;
+      }
+   } //public void inputMode()
+
+/**
  * assigns all config values, sets the structure of the network and training hyperparameters
  */
    public void setConfigValues()
    {
-      mode = "TRAIN";
       numInputs = 2;
-      numHiddenNodes = 2;
+      numHiddenNodes = 5;
       maxErrorThreshold = 0.001;
       lambda = 0.3;
       maxIterations = 100000;
       maxRandomWeight = 1.5;
       minRandomWeight = 0.1;
-      numOutputs = 1;
+      numOutputs = 3;
       numPossibleInputSets = 4;
       numIterations = 0;
    } //public void setConfigValues()
@@ -80,14 +127,21 @@ public class Network
  */
    public void echoConfigValues() 
    {
-      System.out.println("Number of Inputs: " + numInputs);
-      System.out.println("Number of Hidden Nodes: " + numHiddenNodes);
-      System.out.println("Number of Outputs: " + numOutputs);
-      System.out.println("Error Threshold: " + maxErrorThreshold);
-      System.out.println("Lambda (Learning Rate): " + lambda);
-      System.out.println("Maximum Number of Iterations: " + maxIterations);
-      System.out.println("Maximum Initial Weight Value: " + maxRandomWeight);
-      System.out.println("Minimum Initial Weight Value: " + minRandomWeight);
+      System.out.println("Network Configuration:");
+      System.out.println("\tNumber of Inputs: " + numInputs);
+      System.out.println("\tNumber of Hidden Nodes: " + numHiddenNodes);
+      System.out.println("\tNumber of Outputs: " + numOutputs);
+
+      if (runTrain.equals(mode.TRAIN))
+      {
+         System.out.println("\tError Threshold: " + maxErrorThreshold);
+         System.out.println("\tLambda (Learning Rate): " + lambda);
+         System.out.println("\tMaximum Number of Iterations: " + maxIterations);
+      }
+
+      System.out.println("\tMaximum Initial Weight Value: " + maxRandomWeight);
+      System.out.println("\tMinimum Initial Weight Value: " + minRandomWeight);
+      System.out.println();
 
    } //public void echoConfigValues()
 
@@ -104,12 +158,11 @@ public class Network
       t = new double[numOutputs];
       possibleInputs = new double[numPossibleInputSets][numInputs];
 
-      if (mode.equals("TRAIN"))
+      if (runTrain.equals(mode.TRAIN))
       {
          thetaj = new double[numHiddenNodes];
          thetai = new double[numOutputs];
          omegaj = new double[numHiddenNodes];
-         omegai = new double[numOutputs];
          psij = new double[numHiddenNodes];
          psii = new double[numOutputs];
       }
@@ -122,7 +175,7 @@ public class Network
    public void populate() 
    {
       possibleInputs = new double[][] { new double[] {0.0, 0.0}, new double[] {0.0, 1.0},  new double[] {1.0, 0.0}, new double[] {1.0, 1.0}};
-      truthTable = new double[] {0.0,1.0,1.0,0.0};
+      truthTable = new double[][] {new double[] {0.0, 0.0, 0.0}, new double[] {0.0, 1.0, 1.0}, new double[] {0.0, 1.0, 1.0}, new double[] {1.0, 1.0, 0.0}};
       randomInitialization();
    }
 
@@ -187,7 +240,7 @@ public class Network
    }
 
 /**
- * runs the network with the given weight values and inputs, updates h, f, and stored theta values
+ * runs the network with the given weight values and inputs, updates h, f, and stored theta values (if training)
  * @param input inputs to be placed into the input array (a)
  */
    public void runNetwork(double[] input)
@@ -206,9 +259,12 @@ public class Network
          {
             theta += a[k] * weights0[k][j];
          }
-         thetaj[j] = theta;
+         if (runTrain.equals(mode.TRAIN))
+         {
+            thetaj[j] = theta;
+         }
          h[j] = activationFunction(theta);
-      }
+      } //for (j = 0; j < h.length; j++)
 
       for (i = 0; i < f.length; i++)
       {
@@ -217,9 +273,12 @@ public class Network
          {
             theta += h[j]*weights1[j][i];
          }
-         thetai[i] = theta;
+         if (runTrain.equals(mode.TRAIN))
+         {
+            thetai[i] = theta;
+         }
          f[i] = activationFunction(theta);
-      }
+      } //for (i = 0; i < f.length; i++)
 
    } //public void runNetwork()
 
@@ -229,12 +288,13 @@ public class Network
  */
    public void train() throws Exception
    {
-      if (!mode.equals("TRAIN"))
+      if (!runTrain.equals(mode.TRAIN))
       {
-         throw new Exception("train() called when network mode not set to \"TRAIN\"!");
+         throw new Exception("train() called when network mode not set to TRAIN!");
       }
 
       double totalError = Double.MAX_VALUE;
+      int inputNum;
       int i;
       double[] currInput;
 
@@ -242,28 +302,31 @@ public class Network
       {
          totalError = 0.0;
 
-         for (i = 0; i < possibleInputs.length; i++)
+         for (inputNum = 0; inputNum < possibleInputs.length; inputNum++)
          {
-            currInput = possibleInputs[i];
-            t[0] = truthTable[i];
+            currInput = possibleInputs[inputNum];
+            t = truthTable[inputNum];
             runNetwork(currInput);
             updateWeights();
-            totalError += 0.5*((truthTable[i]-f[0])*(truthTable[i]-f[0]));
-         }
+            for (i = 0; i < f.length; i++)
+            {
+               totalError += 0.5 * ((t[i] - f[i]) * (t[i] - f[i]));
+            }
+         } // for (inputNum = 0; inputNum < possibleInputs.length; inputNum++)
 
          numIterations++;
       } // while(numIterations<maxIterations && totalError > maxErrorThreshold)
 
       error = totalError;
-
+      System.out.println("Training results:");
       if (totalError <= maxErrorThreshold) 
       {
-         System.out.println("Training concluded: error (" + totalError + ") has reached error threshold (" + maxErrorThreshold + ")");
+         System.out.println("\tTraining concluded: error (" + totalError + ") has reached error threshold (" + maxErrorThreshold + ")");
       }
 
       if (numIterations >= maxIterations ) 
       {
-         System.out.println("Number of iterations (" + numIterations + ") has reached maximum iterations allowed (" + maxIterations + ")");
+         System.out.println("\tNumber of iterations (" + numIterations + ") has reached maximum iterations allowed (" + maxIterations + ")");
       }
    } //public void train()
 
@@ -276,12 +339,20 @@ public class Network
       int k;
       int j;
       int i;
-      double lowerOmega = t[0] - f[0];
-      double psi0 = lowerOmega*derivActivationFuncton(thetai[0]); //assigns psi0 in accordance with design document
+
+      for ( i = 0; i<numOutputs; i++) 
+      {
+         psii[i] = (t[i]-f[i])*derivActivationFuncton(thetai[i]);
+      }
 
       for (j = 0; j<omegaj.length; j++) 
       {
-         omegaj[j] = psi0*weights1[j][0];
+         omegaj[j] = 0.0;
+         for (i = 0; i< psii.length; i++)
+         {
+            omegaj[j] += psii[i] * weights1[j][i];
+         }
+
          psij[j] = omegaj[j]*derivActivationFuncton(thetaj[j]);
       }
 
@@ -289,7 +360,7 @@ public class Network
       {
          for (j = 0; j<weights0[k].length; j++) 
          {
-            weights0[k][j] += -lambda*-a[k]*psij[j];
+            weights0[k][j] += lambda*a[k]*psij[j];
          }
       }
 
@@ -297,7 +368,7 @@ public class Network
       {
          for (i = 0; i<weights1[j].length; i++) 
          {
-            weights1[j][i] += -lambda*-h[j]*psi0;
+            weights1[j][i] += lambda*h[j]*psii[i];
          }
       }
 
@@ -320,29 +391,62 @@ public void run()
 } //public void run()
 
 /**
- * reports all pertinent information after training the network, including the number of iterations, the error, 
+ * reports all pertinent information after running or training the network, including the number of iterations, the error, 
  * and all possible inputs and their corresponding outputs
  */
    public void report() 
    {
+      int inputNum;
+      int k;
       int i;
-      int j;
 
-      System.out.println("Number of iterations reached: " + numIterations);
-      System.out.println("Error reached: " + error);
-      System.out.println("Truth Table: ");
-
-      for (i = 0; i < possibleInputs.length; i++) 
+      if (runTrain.equals(mode.TRAIN))
       {
-         runNetwork(possibleInputs[i]);
-         for (j = 0; j < a.length; j++)
-         {
-            System.out.print("\t a" + j + " = " + a[j]); //prints inputs
-         }
-         System.out.print("\tf = " + f[0]); //prints output
-         System.out.print("\tt = " + truthTable[i] + "\n"); //prints truth table  
+
+         System.out.println("\tNumber of iterations reached: " + numIterations);
+         System.out.println("\tError reached: " + error);
+         System.out.println();  
       }
+
+      System.out.println("Results: "); 
+      for (inputNum = 0; inputNum < possibleInputs.length; inputNum++) 
+      {
+         runNetwork(possibleInputs[inputNum]);
+         for (k = 0; k < a.length; k++)
+         {
+            System.out.print("\t a" + k + " = " + String.format("%.4f", a[k])); //prints inputs to 4 decimals
+         }
+         for (i = 0; i < f.length; i++)
+         {
+            System.out.print("\t f" + i + " = " + String.format("%.4f", f[i])); //prints ouput to 4 decimals
+            System.out.print("\t t" + i + " = " + String.format("%.4f", truthTable[inputNum][i])); //prints truth table to 4 decimals
+         }
+         System.out.print("\n");
+      } // for (inputNum = 0; inputNum < possibleInputs.length; inputNum++)
+
    } //public void report()
+
+/**
+ * executes the network based on its predefined mode, either trains or runs the network using current weights
+ */
+   public void execute()
+   {
+      if (runTrain.equals(mode.TRAIN))
+      {
+         try 
+         {
+            train();
+         } 
+         catch (Exception e) 
+         {
+            e.printStackTrace();
+         }
+      } //if (runTrain.equals(mode.TRAIN))
+      else
+      {
+         run();
+      }
+   } //public void execute()
 
 /**
  * main method to test the network, trains and reports all pertinent information
@@ -350,7 +454,7 @@ public void run()
    public static void main(String[] args) throws Exception 
    {
       Network net = new Network();
-      net.train();
+      net.execute();
       net.report();
    }
 
