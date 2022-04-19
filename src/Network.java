@@ -522,23 +522,28 @@ public class Network
       int k;
       a = input;
 
+      for (j = 0; j < numHiddenNodes; j++)
+      {
+         thetaj[j] = 0.0;
+         for (k = 0; k < numInputs; k++)
+         {
+            thetaj[j] += a[k] * weights0[k][j];
+         }
+         h[j] = activationFunction(thetaj[j]);
+      }
+
       for (i = 0; i < numOutputs; i++)
       {
          thetai[i] = 0.0;
          for (j = 0; j < numHiddenNodes; j++)
          {
-            thetaj[j] = 0.0;
-            for (k = 0; k < numInputs; k++)
-            {
-               thetaj[j] += weights0[k][j] * a[k];
-            }
-            h[j] = activationFunction(thetaj[j]);
-            thetai[i] += weights1[j][i] * h[j];
+            thetai[i] += h[j] * weights1[j][i];
          }
          f[i] = activationFunction(thetai[i]);
          omegai[i] = t[i] - f[i];
          psii[i] = omegai[i] * derivActivationFuncton(thetai[i]);
       } // for (i = 0; i < numOutputs; i++)
+
    } // public void runNetwork(double[] input)
 
 /**
@@ -632,12 +637,15 @@ public class Network
       for (j = 0; j < numHiddenNodes; j++)
       {
          omegaj[j] = 0.0;
+
          for (i = 0; i < numOutputs; i++)
          {
             omegaj[j] += psii[i] * weights1[j][i];
             weights1[j][i] += lambda * h[j] * psii[i];
          }
+
          psij[j] = omegaj[j] * derivActivationFuncton(thetaj[j]);
+
          for (k = 0;k < numInputs; k++)
          {
             weights0[k][j] += lambda * a[k] * psij[j];

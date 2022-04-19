@@ -3,7 +3,7 @@
     "preLoadedWeights":false,
     "weightFileName":"outputWeights.json",
     "numInputs":2,
-    "numHiddenNodes":100,    
+    "numHiddenNodes":5,    
     "numOutputs":3,
     "numPossibleInputs":4,
     "maxIterations":100000,
