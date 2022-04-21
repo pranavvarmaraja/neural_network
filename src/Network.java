@@ -8,11 +8,11 @@ import java.io.PrintWriter;
 
 /**
  * Pranav Varmaraja
- * 4/11/2022
+ * 4/21/2022
  * 
- * This class creates, trains, and runs a basic three activation layer perceptron. The network takes any number of inputs, 
- * passes them through 1 activation layer consisting of any number of nodes, and outputs any number of values. The network
- * is thus an A-B-C network, with any number of inputs, hidden nodes, and outputs.
+ * This class creates, trains, and runs a basic four activation layer perceptron. The network takes any number of inputs, 
+ * passes them through 2 activation layers consisting of any number of nodes, and outputs any number of values. The network
+ * is thus an A-B-C-D network, with any number of inputs, hidden nodes in layer 1, hidden nodes in layer 2 and outputs.
  * Training is performed via gradient descent to fit the network to training data.
  * 
  * The network also implements backpropagation optimization.
@@ -22,19 +22,41 @@ import java.io.PrintWriter;
  * 
  * All JSON was parsed using JSON-simple, the jar can be found at: https://code.google.com/archive/p/json-simple/downloads
  * 
- * Methods contained in file: inputMode(), setConfigValues(), echoConfigValues(), parseConfigFile(fileName),
- * parseWeightsFile(fileName), parseTruthTable(fileName), parseInputs(fileName), saveWeights(fileName)
- * allocate(), populate(), randomInitialization(), getRandWeight(), activationFunction(x), 
- * derivActivationFunction(x), runNetwork(input), executeNetwork(input), run(), train(), execute(), report(), updateWeight(),
+ * Methods contained in file:
  * 
+ * public Network(String fileName)
+ * public void parseConfigFile(String fileName)
+ * public void parseWeightsFile(String fileName) throws Exception
+ * public void parseTruthTable(String fileName)
+ * public void parseInputs(String fileName)
+ * public void saveWeights(String fileName)
+ * public void inputMode()
+ * public void setConfigValues()
+ * public void echoConfigValues()
+ * public void allocate()
+ * public void populate()
+ * public double getRandWeight()
+ * public void randomInitialization()
+ * public double activationFunction(double x)
+ * public double derivActivationFuncton(double x)
+ * public void runNetwork(double[] input)
+ * public void executeNetwork(double[] input)
+ * public void train() throws Exception
+ * public void updateWeights()
+ * public void run()
+ * public void report()
+ * public void execute()
+ * public static void main(String[] args)
  */
 public class Network 
 {
 
    double[][] weights0;
    double[][] weights1;
+   double[][] weights2;
    double[] a;
-   double[] h;
+   double[] h1;
+   double[] h2;
    double[] f;
    double[] t;
 
@@ -43,7 +65,8 @@ public class Network
 
    int numInputs;
    int numOutputs;
-   int numHiddenNodes;
+   int numHiddenNodes1;
+   int numHiddenNodes2;
    double maxErrorThreshold;
    double lambda;
    int maxIterations;
@@ -57,17 +80,19 @@ public class Network
    double[][] possibleInputs;
    double[][] truthTable;
 
+   double[] thetak;
    double[] thetaj;
    double[] thetai;
+   double[] omegak;
    double[] omegaj;
    double[] omegai;
+   double[] psik;
    double[] psij;
    double[] psii;
 
    String outputFileName;
    String weightFileName;
    String inputFileName;
-   String outputWeightFileName;
    String truthTableFileName;
    boolean preLoadedWeights;
 
@@ -95,7 +120,8 @@ public class Network
       try
       {
          obj = new JSONParser().parse(new FileReader(fileName));
-      } catch (Exception e)
+      } 
+      catch (Exception e)
       {
          e.printStackTrace();
       }
@@ -104,7 +130,8 @@ public class Network
       runOnly = (boolean) json.get("runOnly");
 
       numInputs = Math.toIntExact((long) json.get("numInputs"));
-      numHiddenNodes = Math.toIntExact((long) json.get("numHiddenNodes"));
+      numHiddenNodes1 = Math.toIntExact((long) json.get("numHiddenNodes1"));
+      numHiddenNodes2 = Math.toIntExact((long) json.get("numHiddenNodes2"));
       numOutputs = Math.toIntExact((long) json.get("numOutputs"));
 
       if (!preLoadedWeights)
@@ -155,9 +182,11 @@ public class Network
       JSONObject json = null;
       JSONArray weightskj;
       JSONArray weightsji;
+      JSONArray weightsmk;
       int i;
       int j;
       int k;
+      int m;
 
       try
       {
@@ -167,28 +196,38 @@ public class Network
          e.printStackTrace();
       }
       json = (JSONObject) obj;
+      weightsmk = (JSONArray) json.get("weightsmk");
       weightskj = (JSONArray) json.get("weightskj");
       weightsji = (JSONArray) json.get("weightsji");
 
-      if (weightskj.size()!=weights0.length || weightsji.size()!=weights1.length || 
-      ((JSONArray) weightskj.get(0)).size()!=weights0[0].length || ((JSONArray) weightsji.get(0)).size()!=weights1[0].length) //check if dimensions of weights file are accurate
+      if (weightskj.size()!=weights1.length || weightsji.size()!=weights2.length || weightsmk.size()!=weights0.length || 
+      ((JSONArray) weightskj.get(0)).size()!=weights1[0].length || ((JSONArray) weightsji.get(0)).size()!=weights2[0].length 
+      || ((JSONArray) weightsmk.get(0)).size()!=weights0[0].length) //check if dimensions of weights file are accurate
       {
          throw new Exception("Weights file does not match dimensionality in config file!");
       }
       
-      for (k = 0; k < weights0.length; k++) 
+      for (k = 0; k < weights1.length; k++) 
       {
-         for (j = 0; j < weights0[k].length; j++)
+         for (j = 0; j < weights1[k].length; j++)
          {
-            weights0[k][j] = (double) ((JSONArray) weightskj.get(k)).get(j);
+            weights1[k][j] = (double) ((JSONArray) weightskj.get(k)).get(j);
          }
       }
 
-      for (j = 0; j < weights1.length; j++) 
+      for (j = 0; j < weights2.length; j++) 
       {
-         for (i = 0; i < weights1[j].length; i++)
+         for (i = 0; i < weights2[j].length; i++)
          {
-            weights1[j][i] = (double) ((JSONArray) weightsji.get(j)).get(i);
+            weights2[j][i] = (double) ((JSONArray) weightsji.get(j)).get(i);
+         }
+      }
+
+      for (m = 0; m < weights0.length; m++) 
+      {
+         for (k = 0; k < weights0[m].length; k++)
+         {
+            weights0[m][k] = (double) ((JSONArray) weightsmk.get(m)).get(k);
          }
       }
    } // public void parseWeightsFile(String fileName) throws Exception
@@ -262,6 +301,7 @@ public class Network
    public void saveWeights(String fileName)
    {
       JSONObject output = new JSONObject();
+      JSONArray weightsmk = new JSONArray();
       JSONArray weightskj = new JSONArray();
       JSONArray weightsji = new JSONArray();
       JSONArray tempweights = new JSONArray();
@@ -269,6 +309,8 @@ public class Network
       int k;
       int j;
       int i;
+      int m;
+
       try
       {
          pw = new PrintWriter(fileName);
@@ -279,26 +321,38 @@ public class Network
          System.exit(0);
       }
 
-      for (k = 0; k < weights0.length; k++)
+      for (m = 0; m < weights0.length; m++)
       {
          tempweights = new JSONArray();
-         for (j = 0; j < weights0[k].length; j++)
+         for (k = 0; k < weights0[m].length; k++)
          {
-            tempweights.add(weights0[k][j]);
+            tempweights.add(weights0[m][k]);
+         }
+         weightsmk.add(tempweights);
+      }
+
+      for (k = 0; k < weights1.length; k++)
+      {
+         tempweights = new JSONArray();
+         for (j = 0; j < weights1[k].length; j++)
+         {
+            tempweights.add(weights1[k][j]);
          }
          weightskj.add(tempweights);
       }
 
       
-      for (j = 0; j < weights1.length; j++)
+      for (j = 0; j < weights2.length; j++)
       {
          tempweights = new JSONArray();
-         for (i = 0; i < weights1[j].length; i++)
+         for (i = 0; i < weights2[j].length; i++)
          {
-            tempweights.add(weights1[j][i]);
+            tempweights.add(weights2[j][i]);
          }
          weightsji.add(tempweights);
       }
+
+      output.put("weightsmk", weightsmk);
       output.put("weightskj", weightskj);
       output.put("weightsji", weightsji);
 
@@ -357,7 +411,8 @@ public class Network
    public void setConfigValues()
    {
       numInputs = 2;
-      numHiddenNodes = 2;
+      numHiddenNodes1 = 2;
+      numHiddenNodes2 = 2;
       maxErrorThreshold = 0.001;
       lambda = 0.3;
       maxIterations = 100000;
@@ -375,7 +430,8 @@ public class Network
    {
       System.out.println("Network Configuration:");
       System.out.println("\tNumber of Inputs: " + numInputs);
-      System.out.println("\tNumber of Hidden Nodes: " + numHiddenNodes);
+      System.out.println("\tNumber of Hidden Nodes in First Hidden Layer: " + numHiddenNodes1);
+      System.out.println("\tNumber of Hidden Nodes in Second Hidden Layer: " + numHiddenNodes2);
       System.out.println("\tNumber of Outputs: " + numOutputs);
 
       if (runTrain.equals(mode.TRAIN))
@@ -404,10 +460,12 @@ public class Network
  */
    public void allocate()
    {
-      weights0 = new double[numInputs][numHiddenNodes];
-      weights1 = new double[numHiddenNodes][numOutputs];
+      weights0 = new double[numInputs][numHiddenNodes1];
+      weights1 = new double[numHiddenNodes1][numHiddenNodes2];
+      weights2 = new double[numHiddenNodes2][numOutputs];
       a = new double[numInputs];
-      h = new double[numHiddenNodes];
+      h1 = new double[numHiddenNodes1];
+      h2 = new double[numHiddenNodes2];
       f = new double[numOutputs];
       t = new double[numOutputs];
       truthTable = new double[numPossibleInputSets][numOutputs];
@@ -415,13 +473,16 @@ public class Network
 
       if (runTrain.equals(mode.TRAIN))
       {
-         thetaj = new double[numHiddenNodes];
+         thetak = new double[numHiddenNodes1];
+         thetaj = new double[numHiddenNodes2];
          thetai = new double[numOutputs];
          psii = new double[numOutputs];
          omegai = new double[numOutputs];
-         omegaj = new double[numHiddenNodes];
-         psij = new double[numHiddenNodes];
-      }
+         omegaj = new double[numHiddenNodes2];
+         psij = new double[numHiddenNodes2];
+         psik = new double[numHiddenNodes1];
+         omegak = new double[numHiddenNodes1];
+      } // if (runTrain.equals(mode.TRAIN))
       
    } //public void allocate()
 
@@ -471,20 +532,29 @@ public class Network
       int k;
       int i;
       int j;
+      int m;
 
-      for (k = 0; k < weights0.length; k++) 
+      for (m = 0; m < weights0.length; m++)
       {
-         for (j = 0; j < weights0[k].length; j++)
+         for (k = 0; k < weights0[m].length; k++)
          {
-            weights0[k][j] = getRandWeight();
+            weights0[m][k] = getRandWeight();
          }
       }
 
-      for (j = 0; j < weights1.length; j++) 
+      for (k = 0; k < weights1.length; k++) 
       {
-         for (i = 0; i < weights1[j].length; i++)
+         for (j = 0; j < weights1[k].length; j++)
          {
-            weights1[j][i] = getRandWeight();
+            weights1[k][j] = getRandWeight();
+         }
+      }
+
+      for (j = 0; j < weights2.length; j++) 
+      {
+         for (i = 0; i < weights2[j].length; i++)
+         {
+            weights2[j][i] = getRandWeight();
          }
       }
 
@@ -520,24 +590,35 @@ public class Network
       int j;
       int i;
       int k;
+      int m;
       a = input;
 
-      for (j = 0; j < numHiddenNodes; j++)
+      for (k = 0; k < numHiddenNodes1; k++)
+      {
+         thetak[k] = 0.0;
+         for (m = 0; m < numInputs; m++)
+         {
+            thetak[k] += a[m] * weights0[m][k];
+         }
+         h1[k] = activationFunction(thetak[k]);
+      }
+
+      for (j = 0; j < numHiddenNodes2; j++)
       {
          thetaj[j] = 0.0;
-         for (k = 0; k < numInputs; k++)
+         for (k = 0; k < numHiddenNodes1; k++)
          {
-            thetaj[j] += a[k] * weights0[k][j];
+            thetaj[j] += h1[k] * weights1[k][j];
          }
-         h[j] = activationFunction(thetaj[j]);
+         h2[j] = activationFunction(thetaj[j]);
       }
 
       for (i = 0; i < numOutputs; i++)
       {
          thetai[i] = 0.0;
-         for (j = 0; j < numHiddenNodes; j++)
+         for (j = 0; j < numHiddenNodes2; j++)
          {
-            thetai[i] += h[j] * weights1[j][i];
+            thetai[i] += h2[j] * weights2[j][i];
          }
          f[i] = activationFunction(thetai[i]);
          omegai[i] = t[i] - f[i];
@@ -555,25 +636,43 @@ public class Network
       int j;
       int i;
       int k;
+      int m;
       double theta1;
       double theta2;
+      double theta3;
       a = input;
+
+      for (k = 0; k < numHiddenNodes1; k++)
+      {
+         theta1 = 0.0;
+         for (m = 0; m < numInputs; m++)
+         {
+            theta1 += a[m] * weights0[m][k];
+         }
+         h1[k] = activationFunction(theta1);
+      }
+
+      for (j = 0; j < numHiddenNodes2; j++)
+      {
+         theta2 = 0.0;
+         for (k = 0; k < numHiddenNodes1; k++)
+         {
+            theta2 += h1[k] * weights1[k][j];
+         }
+         h2[j] = activationFunction(theta2);
+      }
 
       for (i = 0; i < numOutputs; i++)
       {
-         theta2 = 0.0;
-         for (j = 0; j < numHiddenNodes; j++)
+         theta3 = 0.0;
+         for (j = 0; j < numHiddenNodes2; j++)
          {
-            theta1 = 0.0;
-            for (k = 0; k < numInputs; k++)
-            {
-               theta1 += weights0[k][j] * a[k];
-            }
-            h[j] = activationFunction(theta1);
-            theta2 += weights1[j][i] * h[j];
+            theta3 += h2[j] * weights2[j][i];
          }
-         f[i] = activationFunction(theta2);
+         f[i] = activationFunction(theta3);
       } // for (i = 0; i < numOutputs; i++)
+
+
    } // public void executeNetwork(double[] input)
 
 /**
@@ -633,24 +732,35 @@ public class Network
       int j;
       int k;
       int i;
+      int m;
 
-      for (j = 0; j < numHiddenNodes; j++)
+      for (j = 0; j < numHiddenNodes2; j++)
       {
          omegaj[j] = 0.0;
 
          for (i = 0; i < numOutputs; i++)
          {
-            omegaj[j] += psii[i] * weights1[j][i];
-            weights1[j][i] += lambda * h[j] * psii[i];
+            omegaj[j] += psii[i] * weights2[j][i];
+            weights2[j][i] += lambda * h2[j] * psii[i];
          }
-
          psij[j] = omegaj[j] * derivActivationFuncton(thetaj[j]);
+      } // for (j = 0; j < numHiddenNodes2; j++)
 
-         for (k = 0;k < numInputs; k++)
+      for (k = 0; k < numHiddenNodes1; k++)
+      {
+         omegak[k] = 0.0;
+         for (j = 0; j < numHiddenNodes2; j++)
          {
-            weights0[k][j] += lambda * a[k] * psij[j];
+            omegak[k] += psij[j]*weights1[k][j];
+            weights1[k][j] += lambda * h1[k] * psij[j];
          }
-      } // for (j = 0; j < numHiddenNodes; j++)
+         psik[k] = omegak[k] * derivActivationFuncton(thetak[k]);
+
+         for (m = 0; m < numInputs; m++)
+         {
+            weights0[m][k] += lambda * a[m] * psik[k];
+         }
+      } // for (k = 0; k < numHiddenNodes1; k++)
    } //public void updateWeights
 
 /**
@@ -738,15 +848,19 @@ public void run()
  */
    public static void main(String[] args)
    {
+      Network net = null;
       if (args.length==0)
       {
-         System.out.println("USAGE: java -cp <filepath to json-simple-1.1.1.jar>:<bin dir to class files> Network <configFilePath>");
+         net = new Network("configFile.json");
       }
       else
       {
-         Network net = new Network(args[0]);
-         net.execute();
-         net.report();
+         net = new Network(args[0]);
+      }
+      net.execute();
+      net.report();
+      if (net.runTrain.equals(mode.TRAIN) && net.outputFileName!=null)
+      {
          net.saveWeights(net.outputFileName);
       }
    } // public static void main(String[] args)
