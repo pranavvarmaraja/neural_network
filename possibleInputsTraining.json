@@ -1,0 +1,29 @@
+{
+    "possibleInputs":[
+        "./training_files/finger1_1.in",
+        "./training_files/finger1_2.in",
+        "./training_files/finger1_3.in",
+        "./training_files/finger1_4.in",
+        "./training_files/finger1_5.in",
+        "./training_files/finger2_1.in",
+        "./training_files/finger2_2.in",
+        "./training_files/finger2_3.in",
+        "./training_files/finger2_4.in",
+        "./training_files/finger2_5.in",
+        "./training_files/finger3_1.in",
+        "./training_files/finger3_2.in",
+        "./training_files/finger3_3.in",
+        "./training_files/finger3_4.in",
+        "./training_files/finger3_5.in",
+        "./training_files/finger4_1.in",
+        "./training_files/finger4_2.in",
+        "./training_files/finger4_3.in",
+        "./training_files/finger4_4.in",
+        "./training_files/finger4_5.in",
+        "./training_files/finger5_1.in",
+        "./training_files/finger5_2.in",
+        "./training_files/finger5_3.in",
+        "./training_files/finger5_4.in",
+        "./training_files/finger5_5.in"
+    ]
+}

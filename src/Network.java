@@ -3,7 +3,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 /**
@@ -287,12 +289,53 @@ public class Network
 
       for (k = 0; k < inputs.size(); k++) 
       {
-         for (j = 0; j < ((JSONArray) inputs.get(k)).size(); j++)
-         {
-            this.possibleInputs[k][j] = (double) ((JSONArray) inputs.get(k)).get(j);
-         }
+         possibleInputs[k] = parseInputFile((String) inputs.get(k));
       }
    } // public void parseInputs(String fileName)
+
+
+   public double[] parseInputFile(String fileName)
+   {
+      double[] ret = new double[numInputs];
+      int count = 0;
+      BufferedReader reader = null;
+      try
+      {
+         reader = new BufferedReader(new FileReader(fileName));
+      }
+      catch (Exception e)
+      {
+         e.printStackTrace();
+      }
+
+      String line = null;
+      try {
+         line = reader.readLine();
+      } catch (IOException e) {
+         // TODO Auto-generated catch block
+         e.printStackTrace();
+      }
+      while (line != null)
+      {
+         ret[count] = Double.parseDouble(line);
+         count++;
+         try {
+            line = reader.readLine();
+         } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+         }
+      }
+      try {
+         reader.close();
+      } catch (IOException e) {
+         // TODO Auto-generated catch block
+         e.printStackTrace();
+      }
+      return ret;
+
+
+   }
 
 /**
  * saves the weights to a given file in json format

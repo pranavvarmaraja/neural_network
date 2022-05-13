@@ -1,0 +1,17 @@
+{
+    "runOnly":false,
+    "preLoadedWeights":false,
+    "numInputs":10000,
+    "numHiddenNodes1":1000,
+    "numHiddenNodes2":100,    
+    "numOutputs":5,
+    "numPossibleInputs":25,
+    "maxIterations":100000,
+    "outputWeightsFileName":"outputWeights.json",
+    "minRandomWeight":-1.5,
+    "errorThreshold":0.1,
+    "maxRandomWeight":1.5,
+    "lambda":0.01,
+    "truthTableFileName":"truthTable.json",
+    "inputFileName":"possibleInputs.json"
+}
